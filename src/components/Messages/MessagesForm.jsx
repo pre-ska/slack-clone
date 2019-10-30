@@ -71,7 +71,6 @@ export class MessagesForm extends Component {
   };
 
   uploadFile = (file, metadata) => {
-    console.log("uploadfile");
     const pathToUpload = this.state.channel.id;
     const ref = this.props.messagesRef;
     const filePath = `chat/public/${uuidv4()}.jpg`;
@@ -88,7 +87,7 @@ export class MessagesForm extends Component {
             const percentUploaded = Math.round(
               (snap.bytesTransferred / snap.totalBytes) * 100
             );
-            this.isProgressBarVisible(percentUploaded);
+            this.props.isProgressBarVisible(percentUploaded);
             this.setState({ percentUploaded });
           },
           err => {
@@ -172,6 +171,7 @@ export class MessagesForm extends Component {
           />
           <Button
             color="teal"
+            disabled={uploadState === "uploading"}
             onClick={this.openModal}
             content="Upload Media"
             labelPosition="right"

@@ -12,7 +12,11 @@ export class Messages extends Component {
     messagesLoading: true,
     channel: this.props.currentChannel,
     user: this.props.currentUser,
-    progressbar: false
+    progressbar: false,
+    numUniqueUsers: "",
+    searchTerm: "",
+    searchLoading: false,
+    searchResults: []
   };
 
   componentDidMount() {
@@ -32,14 +36,68 @@ export class Messages extends Component {
       loadedMessages.push(snap.val());
 
       clearTimeout(TO);
-
+      // child_added dodaje listenere pojedinačno na svaku poruku
+      //pa mi se onda re-renderira komponentta svaki put
+      // zato setTimeout
       TO = setTimeout(() => {
         this.setState({
           messages: loadedMessages,
           messagesLoading: false
         });
+
+        this.countUniqueUsers(loadedMessages);
       }, 100);
     });
+  };
+
+  handleSearchChange = e => {
+    //na svaki search input, spremam searchTerm u state i
+    //češljam messages array u callbacku
+    this.setState(
+      {
+        searchTerm: e.target.value,
+        searchLoading: true
+      },
+      () => this.handleSearchMessages()
+    );
+  };
+
+  handleSearchMessages = () => {
+    const channelMessages = [...this.state.messages];
+    const regex = new RegExp(this.state.searchTerm, "gi");
+    let TO;
+    // vrati mi samo poruke koje sadržavaju searchTerm
+    const searchResults = channelMessages.reduce((acc, message) => {
+      if (
+        (message.content && message.content.match(regex)) ||
+        message.user.name.match(regex)
+      ) {
+        acc.push(message);
+      }
+      return acc;
+    }, []);
+    this.setState({ searchResults });
+
+    //animacija u inputu...
+    clearTimeout(TO);
+    TO = setTimeout(() => {
+      this.setState({ searchLoading: false });
+    }, 500);
+  };
+
+  countUniqueUsers = messages => {
+    //izbroji koliko ima sudionika u chatu...preko imena u porukama
+    const uniqueUsers = messages.reduce((acc, message) => {
+      if (!acc.includes(message.user.name)) {
+        acc.push(message.user.name);
+      }
+
+      return acc;
+    }, []);
+    const plural = uniqueUsers.length > 1 || uniqueUsers.length === 0;
+    const numUniqueUsers = `${uniqueUsers.length} user${plural ? "s" : ""}`;
+
+    this.setState({ numUniqueUsers });
   };
 
   displayMessages = messages =>
@@ -58,16 +116,35 @@ export class Messages extends Component {
     }
   };
 
+  displayChannelName = channel => (channel ? `#${channel.name}` : "");
+
   render() {
-    const { messagesRef, channel, user, messages, progressBar } = this.state;
+    const {
+      messagesRef,
+      channel,
+      user,
+      messages,
+      progressBar,
+      numUniqueUsers,
+      searchResults,
+      searchTerm,
+      searchLoading
+    } = this.state;
 
     return (
       <Fragment>
-        <MessagesHeader />
+        <MessagesHeader
+          numUniqueUsers={numUniqueUsers}
+          channelName={this.displayChannelName(channel)}
+          handleSearchChange={this.handleSearchChange}
+          searchLoading={searchLoading}
+        />
         <Segment>
           <Comment.Group
             className={progressBar ? "messages__progress" : "messages"}>
-            {this.displayMessages(messages)}
+            {searchTerm
+              ? this.displayMessages(searchResults)
+              : this.displayMessages(messages)}
           </Comment.Group>
         </Segment>
         <MessagesForm
