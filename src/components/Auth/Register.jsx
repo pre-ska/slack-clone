@@ -73,6 +73,13 @@ class Register extends Component {
     });
   };
 
+  saveUser = createdUser => {
+    return this.state.usersRef.child(createdUser.user.uid).set({
+      name: createdUser.user.displayName,
+      avatar: createdUser.user.photoURL
+    });
+  };
+
   handleSubmit = e => {
     e.preventDefault();
 
@@ -96,7 +103,7 @@ class Register extends Component {
           createdUser.user
             .updateProfile({
               displayName: this.state.username,
-              photoURL: `http://gravatar/avatar/${md5(
+              photoURL: `http://gravatar.com/avatar/${md5(
                 createdUser.user.email
               )}?d=identicon`
             })
@@ -121,13 +128,6 @@ class Register extends Component {
           });
         });
     }
-  };
-
-  saveUser = createdUser => {
-    return this.state.usersRef.child(createdUser.user.uid).set({
-      name: createdUser.user.displayName,
-      avatar: createdUser.user.photoURL
-    });
   };
 
   handleInputError = (errors, inputName) => {
