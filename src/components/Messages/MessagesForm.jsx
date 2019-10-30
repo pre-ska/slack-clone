@@ -3,6 +3,7 @@ import uuidv4 from "uuid/v4";
 import { Segment, Button, Input } from "semantic-ui-react";
 import firebase from "../../firebase";
 import FileModal from "./FileModal";
+import ProgressBar from "./ProgressBar";
 
 export class MessagesForm extends Component {
   state = {
@@ -70,9 +71,10 @@ export class MessagesForm extends Component {
   };
 
   uploadFile = (file, metadata) => {
+    console.log("uploadfile");
     const pathToUpload = this.state.channel.id;
     const ref = this.props.messagesRef;
-    const filePath = `chat/public/${uuidv4().jpg}`;
+    const filePath = `chat/public/${uuidv4()}.jpg`;
 
     this.setState(
       {
@@ -86,6 +88,7 @@ export class MessagesForm extends Component {
             const percentUploaded = Math.round(
               (snap.bytesTransferred / snap.totalBytes) * 100
             );
+            this.isProgressBarVisible(percentUploaded);
             this.setState({ percentUploaded });
           },
           err => {
@@ -97,8 +100,8 @@ export class MessagesForm extends Component {
             });
           },
           () => {
-            this.state.uploadtask.snapshot.ref
-              .getDownloadUrl()
+            this.state.uploadTask.snapshot.ref
+              .getDownloadURL()
               .then(downloadUrl => {
                 this.sendFileMessage(downloadUrl, ref, pathToUpload);
               })
@@ -122,7 +125,7 @@ export class MessagesForm extends Component {
       .push()
       .set(this.createMessage(fileUrl))
       .then(() => {
-        this.setState({ uplaodState: "done" });
+        this.setState({ uploadState: "done" });
       })
       .catch(err => {
         console.error(err);
@@ -133,7 +136,14 @@ export class MessagesForm extends Component {
   };
 
   render() {
-    const { errors, message, loading, modal } = this.state;
+    const {
+      errors,
+      message,
+      loading,
+      modal,
+      uploadState,
+      percentUploaded
+    } = this.state;
     return (
       <Segment className="message__form">
         <Input
@@ -167,12 +177,16 @@ export class MessagesForm extends Component {
             labelPosition="right"
             icon="cloud upload"
           />
-          <FileModal
-            uploadFile={this.uploadFile}
-            modal={modal}
-            closeModal={this.closeModal}
-          />
         </Button.Group>
+        <FileModal
+          uploadFile={this.uploadFile}
+          modal={modal}
+          closeModal={this.closeModal}
+        />
+        <ProgressBar
+          uploadState={uploadState}
+          percentUploaded={percentUploaded}
+        />
       </Segment>
     );
   }

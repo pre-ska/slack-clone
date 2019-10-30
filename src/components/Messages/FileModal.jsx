@@ -5,7 +5,7 @@ import mime from "mime-types";
 export class FileModal extends Component {
   state = {
     file: null,
-    authorized: ["image/jpg", "image/png"]
+    authorized: ["image/jpeg", "image/png"]
   };
 
   addFile = e => {
@@ -19,7 +19,10 @@ export class FileModal extends Component {
     const { file } = this.state;
     const { uploadFile, closeModal } = this.props;
     if (file !== null) {
+      console.log("ide upload");
+      console.log(file.name);
       if (this.isAuthorized(file.name)) {
+        console.log("isAuthorized");
         const metadata = { contentType: mime.lookup(file.name) };
         uploadFile(file, metadata);
         closeModal();
