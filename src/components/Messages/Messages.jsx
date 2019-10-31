@@ -7,7 +7,9 @@ import firebase from "../../firebase";
 
 export class Messages extends Component {
   state = {
+    privateChannel: this.props.isPrivateChannel,
     messagesRef: firebase.database().ref("messages"),
+    privateMessagesRef: firebase.database().ref("privateMessages"),
     messages: [],
     messagesLoading: true,
     channel: this.props.currentChannel,
@@ -32,7 +34,11 @@ export class Messages extends Component {
     let loadedMessages = [];
     let TO;
 
-    this.state.messagesRef.child(channelId).on("child_added", snap => {
+    //ako je privatni chat, koristi privateMessagesRef
+    // ako nije koristi messagesRef
+    const ref = this.getMessagesRef();
+
+    ref.child(channelId).on("child_added", snap => {
       loadedMessages.push(snap.val());
 
       clearTimeout(TO);
@@ -48,6 +54,12 @@ export class Messages extends Component {
         this.countUniqueUsers(loadedMessages);
       }, 100);
     });
+  };
+
+  getMessagesRef = () => {
+    const { messagesRef, privateMessagesRef, privateChannel } = this.state;
+
+    return privateChannel ? privateMessagesRef : messagesRef;
   };
 
   handleSearchChange = e => {
@@ -66,6 +78,7 @@ export class Messages extends Component {
     const channelMessages = [...this.state.messages];
     const regex = new RegExp(this.state.searchTerm, "gi");
     let TO;
+
     // vrati mi samo poruke koje sadržavaju searchTerm
     const searchResults = channelMessages.reduce((acc, message) => {
       if (
@@ -76,6 +89,8 @@ export class Messages extends Component {
       }
       return acc;
     }, []);
+
+    // spremi taj novi array u state
     this.setState({ searchResults });
 
     //animacija u inputu...
@@ -94,12 +109,14 @@ export class Messages extends Component {
 
       return acc;
     }, []);
+
     const plural = uniqueUsers.length > 1 || uniqueUsers.length === 0;
     const numUniqueUsers = `${uniqueUsers.length} user${plural ? "s" : ""}`;
 
     this.setState({ numUniqueUsers });
   };
 
+  // glavna funkcija koja vrti messages array
   displayMessages = messages =>
     messages.length &&
     messages.map(message => (
@@ -116,7 +133,12 @@ export class Messages extends Component {
     }
   };
 
-  displayChannelName = channel => (channel ? `#${channel.name}` : "");
+  //privatni kanali počinju sa @
+  displayChannelName = channel => {
+    return channel
+      ? `${this.state.privateChannel ? "@" : "#"}${channel.name}`
+      : "";
+  };
 
   render() {
     const {
@@ -128,7 +150,8 @@ export class Messages extends Component {
       numUniqueUsers,
       searchResults,
       searchTerm,
-      searchLoading
+      searchLoading,
+      privateChannel
     } = this.state;
 
     return (
@@ -138,6 +161,7 @@ export class Messages extends Component {
           channelName={this.displayChannelName(channel)}
           handleSearchChange={this.handleSearchChange}
           searchLoading={searchLoading}
+          isPrivateChannel={privateChannel}
         />
         <Segment>
           <Comment.Group
@@ -151,7 +175,9 @@ export class Messages extends Component {
           messagesRef={messagesRef}
           currentChannel={channel}
           currentUser={user}
+          isPrivateChannel={privateChannel}
           isProgressBarVisible={this.isProgressBarVisible}
+          getMessagesRef={this.getMessagesRef}
         />
       </Fragment>
     );

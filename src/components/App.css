@@ -6,6 +6,11 @@ body,
   padding: 1em;
 }
 
+/* Sidepanel.jsx */
+.menu {
+  padding-bottom: 2em;
+}
+
 /* messages*/
 
 .messages {
