@@ -10,7 +10,7 @@ export class DirectMessages extends Component {
     users: [],
     user: this.props.currentUser,
     userRef: firebase.database().ref("users"),
-    connectedRef: firebase.database().ref("info/connected"),
+    connectedRef: firebase.database().ref(".info/connected"),
     presenceRef: firebase.database().ref("presence")
   };
 
@@ -28,6 +28,7 @@ export class DirectMessages extends Component {
     this.state.userRef.on("child_added", snap => {
       if (currentUserUid !== snap.key) {
         let user = snap.val();
+
         // 2.event će opaliti za sve registrirane korisnike sekvencijonalno
         //dodaj key iz doca u objekt i status offline (kao default)
         user["uid"] = snap.key;
@@ -35,11 +36,11 @@ export class DirectMessages extends Component {
         //gurni ga u array
         loadedUsers.push(user);
 
-        // spremi sve regane korsinike u state
-        clearTimeout(TO);
-        TO = setTimeout(() => {
-          this.setState({ users: loadedUsers });
-        }, 200);
+        // spremi sve postojeće korsinike u state
+        // clearTimeout(TO);
+        // TO = setTimeout(() => {
+        this.setState({ users: loadedUsers });
+        // }, 200);
       }
     });
 
@@ -80,9 +81,9 @@ export class DirectMessages extends Component {
   };
 
   addStatusToUser = (userId, connected = true) => {
-    const updatedUsers = this.state.user.reduce((acc, user) => {
+    const updatedUsers = this.state.users.reduce((acc, user) => {
       if (user.uid === userId) {
-        user["status"] = `${connected} ? 'online' : 'offline'`;
+        user["status"] = `${connected ? "online" : "offline"}`;
       }
 
       return acc.concat(user);
@@ -118,6 +119,7 @@ export class DirectMessages extends Component {
 
   render() {
     const { users, activeChannel } = this.state;
+
     return (
       <Menu.Menu className="menu">
         <Menu.Item>

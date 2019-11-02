@@ -4,6 +4,8 @@ import MessagesHeader from "./MessagesHeader";
 import MessagesForm from "./MessagesForm";
 import Message from "./Message";
 import firebase from "../../firebase";
+import { connect } from "react-redux";
+import { setUserPosts } from "../../actions";
 
 export class Messages extends Component {
   state = {
@@ -13,7 +15,9 @@ export class Messages extends Component {
     messages: [],
     messagesLoading: true,
     channel: this.props.currentChannel,
+    isChannelStarred: false,
     user: this.props.currentUser,
+    usersRef: firebase.database().ref("users"),
     progressbar: false,
     numUniqueUsers: "",
     searchTerm: "",
@@ -23,7 +27,10 @@ export class Messages extends Component {
 
   componentDidMount() {
     const { channel, user } = this.state;
-    if (channel && user) this.addListeners(channel.id);
+    if (channel && user) {
+      this.addListeners(channel.id);
+      this.addUsersStarListener(channel.id, user.uid);
+    }
   }
 
   addListeners = channelId => {
@@ -32,7 +39,7 @@ export class Messages extends Component {
 
   addMessageListener = channelId => {
     let loadedMessages = [];
-    let TO;
+    // let TO;
 
     //ako je privatni chat, koristi privateMessagesRef
     // ako nije koristi messagesRef
@@ -41,25 +48,78 @@ export class Messages extends Component {
     ref.child(channelId).on("child_added", snap => {
       loadedMessages.push(snap.val());
 
-      clearTimeout(TO);
+      // clearTimeout(TO);
       // child_added dodaje listenere pojedinačno na svaku poruku
       //pa mi se onda re-renderira komponentta svaki put
       // zato setTimeout
-      TO = setTimeout(() => {
-        this.setState({
-          messages: loadedMessages,
-          messagesLoading: false
-        });
+      // TO = setTimeout(() => {
+      this.setState({
+        messages: loadedMessages,
+        messagesLoading: false
+      });
 
-        this.countUniqueUsers(loadedMessages);
-      }, 100);
+      this.countUniqueUsers(loadedMessages);
+      this.countUserPosts(loadedMessages);
+      // }, 100);
     });
+  };
+
+  addUsersStarListener = (channelId, userId) => {
+    this.state.usersRef
+      .child(userId)
+      .child("starred")
+      .once("value")
+      .then(data => {
+        if (data.val() !== null) {
+          const channelIds = Object.keys(data.val());
+
+          const prevStarred = channelIds.includes(channelId);
+
+          this.setState({ isChannelStarred: prevStarred });
+        }
+      });
   };
 
   getMessagesRef = () => {
     const { messagesRef, privateMessagesRef, privateChannel } = this.state;
 
     return privateChannel ? privateMessagesRef : messagesRef;
+  };
+
+  handleStar = () => {
+    this.setState(
+      prevState => ({
+        isChannelStarred: !prevState.isChannelStarred
+      }),
+      () => this.starChannel()
+    );
+  };
+
+  // star toggle - klik na star...nakon mjenjanja statea
+  starChannel = () => {
+    if (this.state.isChannelStarred) {
+      //ako je - u users kolekciji dohvati trenutnog korisnika
+      //i u njegovoj starred kolekciji doidaj trenutni kanal
+      this.state.usersRef.child(`${this.state.user.uid}/starred`).update({
+        //-napravi novi key sa IDjem od kanala
+        // i unutra napravi dokument koji sadrži sav info... details, name, ko je kreirao kanal...
+        [this.state.channel.id]: {
+          name: this.state.channel.name,
+          details: this.state.channel.details,
+          createdBy: {
+            name: this.state.channel.createdBy.name,
+            avatar: this.state.channel.createdBy.avatar
+          }
+        }
+      });
+    } else {
+      this.state.usersRef
+        .child(`${this.state.user.uid}/starred`)
+        .child(this.state.channel.id)
+        .remove(err => {
+          if (err !== null) console.log(err);
+        });
+    }
   };
 
   handleSearchChange = e => {
@@ -116,6 +176,23 @@ export class Messages extends Component {
     this.setState({ numUniqueUsers });
   };
 
+  countUserPosts = messages => {
+    let userPosts = messages.reduce((acc, message) => {
+      if (message.user.name in acc) {
+        acc[message.user.name].count += 1;
+      } else {
+        acc[message.user.name] = {
+          avatar: message.user.avatar,
+          count: 1
+        };
+      }
+
+      return acc;
+    }, {});
+
+    this.props.setUserPosts(userPosts);
+  };
+
   // glavna funkcija koja vrti messages array
   displayMessages = messages =>
     messages.length &&
@@ -151,7 +228,8 @@ export class Messages extends Component {
       searchResults,
       searchTerm,
       searchLoading,
-      privateChannel
+      privateChannel,
+      isChannelStarred
     } = this.state;
 
     return (
@@ -162,6 +240,8 @@ export class Messages extends Component {
           handleSearchChange={this.handleSearchChange}
           searchLoading={searchLoading}
           isPrivateChannel={privateChannel}
+          handleStar={this.handleStar}
+          isChannelStarred={isChannelStarred}
         />
         <Segment>
           <Comment.Group
@@ -184,4 +264,7 @@ export class Messages extends Component {
   }
 }
 
-export default Messages;
+export default connect(
+  null,
+  { setUserPosts }
+)(Messages);
