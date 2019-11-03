@@ -9,7 +9,7 @@ export class DirectMessages extends Component {
     activeChannel: "",
     users: [],
     user: this.props.currentUser,
-    userRef: firebase.database().ref("users"),
+    usersRef: firebase.database().ref("users"),
     connectedRef: firebase.database().ref(".info/connected"),
     presenceRef: firebase.database().ref("presence")
   };
@@ -20,12 +20,22 @@ export class DirectMessages extends Component {
     }
   }
 
+  componentWillUnmount() {
+    this.removeListeners();
+  }
+
+  removeListeners = () => {
+    this.state.usersRef.off();
+    this.state.presenceRef.off();
+    this.state.connectedRef.off();
+  };
+
   addListeners = currentUserUid => {
     let loadedUsers = [];
     let TO;
     // za  popis logiranih korisnika:
     // 1.stavi child_added listener
-    this.state.userRef.on("child_added", snap => {
+    this.state.usersRef.on("child_added", snap => {
       if (currentUserUid !== snap.key) {
         let user = snap.val();
 
