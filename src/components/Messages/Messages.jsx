@@ -7,6 +7,7 @@ import firebase from "../../firebase";
 import { connect } from "react-redux";
 import { setUserPosts } from "../../actions";
 import Typing from "./Typing";
+import Skeleton from "./Skeleton";
 
 export class Messages extends Component {
   state = {
@@ -285,6 +286,15 @@ export class Messages extends Component {
       ));
   };
 
+  displayMessageSkeleton = loading =>
+    loading ? (
+      <React.Fragment>
+        {[...Array(10)].map((_, i) => (
+          <Skeleton key={i} />
+        ))}
+      </React.Fragment>
+    ) : null;
+
   render() {
     const {
       messagesRef,
@@ -298,7 +308,8 @@ export class Messages extends Component {
       searchLoading,
       privateChannel,
       isChannelStarred,
-      typingUsers
+      typingUsers,
+      messagesLoading
     } = this.state;
 
     return (
@@ -315,6 +326,7 @@ export class Messages extends Component {
         <Segment>
           <Comment.Group
             className={progressBar ? "messages__progress" : "messages"}>
+            {this.displayMessageSkeleton(messagesLoading)}
             {searchTerm
               ? this.displayMessages(searchResults)
               : this.displayMessages(messages)}
