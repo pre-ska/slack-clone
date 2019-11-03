@@ -1,0 +1,2 @@
+- kada se user odlogira, ostane zelena ikona 
+- typing animacija ne radi... na firebase sve ok ali na klijentu nešto ne štima

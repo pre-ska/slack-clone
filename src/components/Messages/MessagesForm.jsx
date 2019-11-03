@@ -8,6 +8,7 @@ import ProgressBar from "./ProgressBar";
 export class MessagesForm extends Component {
   state = {
     storageRef: firebase.storage().ref(),
+    typingRef: firebase.database().ref("typing"),
     uploadState: "",
     uploadTask: null,
     percentUploaded: 0,
@@ -24,6 +25,21 @@ export class MessagesForm extends Component {
 
   handleChange = e => {
     this.setState({ [e.target.name]: e.target.value });
+  };
+
+  handleKeyDown = () => {
+    const { message, typingRef, channel, user } = this.state;
+    if (message) {
+      typingRef
+        .child(channel.id)
+        .child(user.uid)
+        .set(user.displayName);
+    } else {
+      typingRef
+        .child(channel.id)
+        .child(user.uid)
+        .remove();
+    }
   };
 
   createMessage = (fileUrl = null) => {
@@ -45,7 +61,7 @@ export class MessagesForm extends Component {
 
   sendMessage = () => {
     const { getMessagesRef } = this.props;
-    const { message, channel } = this.state;
+    const { message, channel, user, typingRef } = this.state;
 
     if (message) {
       this.setState({ loading: true });
@@ -56,6 +72,10 @@ export class MessagesForm extends Component {
         .set(this.createMessage())
         .then(() => {
           this.setState({ loading: false, message: "", errors: [] });
+          typingRef
+            .child(channel.id)
+            .child(user.uid)
+            .remove();
         })
         .catch(err => {
           console.error(err);
@@ -156,6 +176,7 @@ export class MessagesForm extends Component {
       <Segment className="message__form">
         <Input
           fluid
+          onKeyDown={this.handleKeyDown}
           name="message"
           value={message}
           onChange={this.handleChange}
