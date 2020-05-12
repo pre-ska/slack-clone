@@ -1,6 +1,6 @@
 # DevChat
 
-[DEMO](https://places-mern-c8f5b.web.app/)
+[DEMO](https://preska-slack.netlify.app/)
 
 ## Slack clone app made with React and Firebase
 
@@ -11,4 +11,4 @@
 Technologies used in this project:
 
 - React, frontend app
-- Firebase Auth, Hosting, Storage, Database
+- Firebase Auth, Storage, Database
