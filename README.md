@@ -11,4 +11,4 @@
 Technologies used in this project:
 
 - React, frontend app
-- Firebase Hosting, Storage, Database
+- Firebase Auth, Hosting, Storage, Database
